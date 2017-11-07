@@ -80,7 +80,7 @@ public class KPSwitchConflictUtil {
                 public void onClick(View v) {
                     final boolean switchToPanel = switchPanelAndKeyboard(panelLayout, focusView);
                     if (switchClickListener != null) {
-                        switchClickListener.onClickSwitch(switchToPanel);
+                        switchClickListener.onClickSwitch(switchToPanel, v);
                     }
                 }
             });
@@ -127,7 +127,7 @@ public class KPSwitchConflictUtil {
      */
     public static void attach(final View panelLayout,
                               final View focusView,
-                              /** Nullable **/ final SwitchClickListener switchClickListener,
+                              /** Nullable **/final SwitchClickListener switchClickListener,
                               SubPanelAndTrigger... subPanelAndTriggers) {
         final Activity activity = (Activity) panelLayout.getContext();
 
@@ -257,7 +257,9 @@ public class KPSwitchConflictUtil {
         /**
          * @param switchToPanel If true, switch to showing Panel; If false, switch to showing Keyboard.
          */
-        void onClickSwitch(boolean switchToPanel);
+        void onClickSwitch(boolean switchToPanel, View view);
+
+        boolean onClickBefore(View v);
     }
 
     /**
@@ -289,34 +291,36 @@ public class KPSwitchConflictUtil {
         triggerView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Boolean switchToPanel = null;
-                if (panelLayout.getVisibility() == View.VISIBLE) {
-                    // panel is visible.
+                if (!switchClickListener.onClickBefore(v)) {
+                    Boolean switchToPanel = null;
+                    if (panelLayout.getVisibility() == View.VISIBLE) {
+                        // panel is visible.
 
-                    if (boundTriggerSubPanelView.getVisibility() == View.VISIBLE) {
+                        if (boundTriggerSubPanelView.getVisibility() == View.VISIBLE) {
 
-                        // bound-trigger panel is visible.
-                        // to show keyboard.
-                        KPSwitchConflictUtil.showKeyboard(panelLayout, focusView);
-                        switchToPanel = false;
+                            // bound-trigger panel is visible.
+                            // to show keyboard.
+                            KPSwitchConflictUtil.showKeyboard(panelLayout, focusView);
+                            switchToPanel = false;
 
+                        } else {
+                            // bound-trigger panel is invisible.
+                            // to show bound-trigger panel.
+                            showBoundTriggerSubPanel(boundTriggerSubPanelView, subPanelAndTriggers);
+                        }
                     } else {
-                        // bound-trigger panel is invisible.
+                        // panel is gone.
+                        // to show panel.
+                        KPSwitchConflictUtil.showPanel(panelLayout);
+                        switchToPanel = true;
+
                         // to show bound-trigger panel.
                         showBoundTriggerSubPanel(boundTriggerSubPanelView, subPanelAndTriggers);
                     }
-                } else {
-                    // panel is gone.
-                    // to show panel.
-                    KPSwitchConflictUtil.showPanel(panelLayout);
-                    switchToPanel = true;
 
-                    // to show bound-trigger panel.
-                    showBoundTriggerSubPanel(boundTriggerSubPanelView, subPanelAndTriggers);
-                }
-
-                if (switchClickListener != null && switchToPanel != null) {
-                    switchClickListener.onClickSwitch(switchToPanel);
+                    if (switchClickListener != null && switchToPanel != null) {
+                        switchClickListener.onClickSwitch(switchToPanel, v);
+                    }
                 }
             }
         });
